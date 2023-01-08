@@ -89,10 +89,10 @@ const add1Step = (num: number): number => {
     return num + 1;
 }
 
-const service = workflow.addStep(startLoggerStep).addStep(add1Step).addStep(endLoggerStep).composeAsync<number>();
+const adder1Service = workflow.addStep(startLoggerStep).addStep(add1Step).addStep(endLoggerStep).composeAsync<number>();
 
 (async () => {
-    const result = await service(1)
+    const result = await adder1Service(1)
     console.log(result);
 })()
 
