@@ -1,0 +1,39 @@
+{
+  "name": "f-composer",
+  "version": "1.0.1",
+  "description": "A nodejs library for composing tiny functions together in a sequential manner",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tareksalem/f-composer.git"
+  },
+  "keywords": [
+    "grandjs",
+    "nodejs",
+    "javascript",
+    "typescript",
+    "workflow",
+    "clunky",
+    "functional programming",
+    "fp",
+    "sequence",
+    "middlewares",
+    "services"
+  ],
+  "author": "Tarek Salem",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tareksalem/f-composer/issues"
+  },
+  "homepage": "https://github.com/tareksalem/f-composer#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.18",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
+  }
+}
