@@ -1,6 +1,6 @@
 {
   "name": "f-composer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A nodejs library for composing tiny functions together in a sequential manner",
   "main": "lib/index.js",
   "scripts": {
