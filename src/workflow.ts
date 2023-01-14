@@ -1,58 +1,71 @@
-type funcType = (...args: any) => any;
+import { IStep, Step, IHook, HookType } from './types';
 
 class Workflow {
-    steps: Map<number, { func:<T> (...args: any) => T, hooks?: { before?:<T> (...args: any) => T, after?: <T> (...args: any) => T }}> = new Map();
+    steps: Map<number, IStep> = new Map();
 
     static NewWorkflow() {
         return new Workflow();
     }
-
-    public addStep<T>(step: (...args: any) => T | void, before?: (...args: any) => any, after?: (...ags: any) => any) {
-        this.steps.set(this.steps.size + 1, { func:<any> step, hooks: { before, after } });
-        return this;
-    }
-    
-    public addSteps(...args: [funcType, funcType?, funcType?][]) {
-        args.forEach(step => {
-            this.addStep(step[0], step[1], step[2]);
-        });
+    public addStep<Input, Output>(step: Step, ...hooks: IHook[]) {
+        this.steps.set(this.steps.size + 1, {
+            step,
+            hooks: hooks
+        })
         return this;
     }
 
-    private createWrappedAsyncFunction(func: funcType, before: funcType | null, after: funcType | null, ...args: any) {
-        const wrappedFunc = async (...childArgs: any) => {
-            let beforeResult: any;
-            if (typeof before === 'function') {
-                 beforeResult = before.constructor.name === 'AsyncFunction' ? await before(...childArgs) : before(...childArgs);
-            }
-            const result: any = func.constructor.name === 'AsyncFunction' ? await func(...(beforeResult ? [beforeResult]: childArgs)) : func(...(beforeResult ? [beforeResult] : childArgs));
-            if (typeof after === 'function') {
-                after.constructor.name === 'AsyncFunction' ? await after(...(result ? [result]: childArgs)) : after(...(result ? [result]: childArgs));
-            }
-            return result;
-        };
-        return wrappedFunc(...args)
+    public addSteps(...args: [Step, ...IHook[]][]) {
+        args.forEach(arg => {
+            this.addStep(...arg);
+        })
+        return this;
     }
 
-    composeAsync<T>() {
-        return async (...args: any) : Promise<T> => {
-            const iterator = this.steps.entries();
-            let returnedResult: any;
-            let nextArguments: any;
-            for await (let [key, value] of iterator) {
-                const before = value.hooks?.before;
-                const after = value.hooks?.after;
-                const func = value.func;
-                if (key === 1) {    console.log('executed first', args);
-                    nextArguments = await this.createWrappedAsyncFunction(func, before, after, ...args);
-                } else {
-                    returnedResult = await this.createWrappedAsyncFunction(func, before, after, ...(nextArguments  ? [nextArguments] : args));
-                    nextArguments = returnedResult;
+    private createWrappedAsyncStep({ step, hooks }: IStep, comingInput: any) {
+        const befores = hooks.filter(hook => hook.type === HookType.before);
+        const afters = hooks.filter(hook => hook.type === HookType.after)
+        async function wrappedStep (input: any) {
+            let nextInput = input;
+            for await (let before of befores) {
+                if (before.options?.readFromOriginalInput) {
+                    nextInput = input;
                 }
+                const beforeResult = before.func.constructor.name === "AsyncFunction" ? await before.func(nextInput) : before.func(nextInput);
+                nextInput = beforeResult ? beforeResult : before.options?.defaultReturningInput ? nextInput : beforeResult;
             }
-            return returnedResult;
+            const stepResult = step.func.constructor.name === "AsyncFunction" ? await step.func(nextInput) : step.func(nextInput);
+            nextInput =  stepResult ? stepResult : step.options?.defaultReturningInput ? nextInput : stepResult;
+            for (let after of afters) {
+                if (after.options?.readFromOriginalInput) {
+                    nextInput = input;
+                } else {
+                    nextInput = stepResult;
+                }
+                setImmediate(() => {
+                    after.func(nextInput);
+                });
+            }
+            return stepResult;
+        }
+        return wrappedStep(comingInput)
+    }
+
+    public composeAsync<Input, Output = any>() {
+        return async (input?: Input): Promise<Output> => {
+            const iterator = this.steps.entries();
+            let returnedResult: Output;
+            let nextInput: any = input;
+            for await (let [, value] of iterator) {
+                if (value.step.options?.readFromOriginalInput) {
+                    nextInput = input;
+                }
+                nextInput = await this.createWrappedAsyncStep(value, nextInput);
+                returnedResult = nextInput;
+            }
+            return returnedResult
         }
     }
 }
 
 export default Workflow;
+export * from './types';
