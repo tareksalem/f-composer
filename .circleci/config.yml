@@ -1,9 +1,13 @@
 version: 2.1
 
+orbs:
+  node: circleci/node@5.0.3
+
 jobs:
   publish:
-    docker:
-      -  image: cimg/base:stable
+    executor: node/default
+    # docker:
+    #   -  image: cimg/base:stable
     steps:
       - checkout
       - run:
