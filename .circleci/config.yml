@@ -1,0 +1,22 @@
+version: 2.1
+
+jobs:
+  publish:
+    docker:
+      -  image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: publish to npm
+          command: |
+            npm set //registery.npmjs.org/:_authToken=$NPM_TOKEN
+            npm publish
+workflows:
+  tagged-build:
+    jobs:
+      - publish:
+          filters:
+            branches:
+              only:
+                - main
+                - master
